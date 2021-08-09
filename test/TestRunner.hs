@@ -85,7 +85,7 @@ main = shellyE . silently . withTmpDir $ liftIO . setupTests
 showParseError :: ParseError -> String
 showParseError (ErrorMsg xs)          = "error: " ++ xs
 showParseError (InfoMsg xs)           = "info: " ++ xs
-showParseError ShowHelpText           = "help!"
+showParseError (ShowHelpText xs)      = "help: " ++ show xs
 showParseError UnknownError           = "unknown"
 showParseError (MissingError {})      = "missing"
 showParseError (ExpectsArgError xs)   = "expecting argument: " ++ xs
@@ -142,8 +142,8 @@ setupTests tmpDir = do
   es <- doesFileExist specFile
   when (not es) (error $ "test suite not found in " ++ testDir)
   ts <- B.readFile specFile >>=
-          \x -> case Yaml.decodeEither x of
-                       Left err -> error ("error in test spec file: " ++ specFile ++ "\n" ++ err)
+          \x -> case Yaml.decodeEither' x of
+                       Left err -> error ("error in test spec file: " ++ specFile ++ "\n" ++ show err)
                        Right t  -> return t
   groups <- forM (tsuiGroups ts) $ \(dir, name) ->
     testGroup name <$> allTestsIn opts testDir dir
@@ -428,8 +428,8 @@ settingsFor opts file = do
     False -> return def
     True -> do
       cfg <- B.readFile settingsFile'
-      case Yaml.decodeEither cfg of
-        Left err -> errDef
+      case Yaml.decodeEither' cfg of
+        Left _err -> errDef
         Right t  -> return t
   where
     errDef = do
